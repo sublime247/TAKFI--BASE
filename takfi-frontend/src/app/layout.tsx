@@ -8,6 +8,7 @@ import "./globals.css"
 import { Sidebar } from "@/app/components/sidebar"
 import { Header } from "@/app/components/header"
 import { Providers } from "./provider"
+import { Toaster } from "@/components/ui/sonner"
 import '@rainbow-me/rainbowkit/styles.css';
 
 export const metadata: Metadata = {
@@ -28,16 +29,17 @@ export default function RootLayout({
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Providers>
-        <div className="flex h-screen bg-[#0B0F0E] overflow-hidden">
-          <Sidebar />
-          <div className="flex flex-1 flex-col min-w-0">
-            <Header />
-            <main className="flex-1 p-6 overflow-y-auto">
-              <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-            </main>
+          <div className="flex h-screen bg-[#0B0F0E] overflow-hidden">
+            <Sidebar />
+            <div className="flex flex-1 flex-col min-w-0">
+              <Header />
+              <main className="flex-1 p-6 overflow-y-auto">
+                <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+              </main>
+            </div>
           </div>
-        </div>
-        <Analytics />
+          <Analytics />
+          <Toaster />
         </Providers>
       </body>
     </html>

@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, ArrowLeft, Copy, ArrowRight } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from "wagmi"
+import { parseEther, formatEther } from "viem"
+import { TAKFI_CONTRACT_ADDRESS } from "../contracts/takfi-address"
+import { TAKFI_ABI } from "../contracts/takfi-abi"
+import { toast } from "sonner"
 
 interface CreatePolicyModalProps {
   open: boolean
@@ -29,8 +34,14 @@ interface PolicyFormData {
 }
 
 export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps) {
+  const { address, isConnected } = useAccount()
+  const { data: hash, writeContract, isPending, error: writeError } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess: isConfirmed, error: confirmError } = useWaitForTransactionReceipt({ hash })
+
   // We use a "virtual" step system to allow skipping group details for individual policy
   const [currentStep, setCurrentStep] = useState<Step>(1)
+  const [calculatedContribution, setCalculatedContribution] = useState<string>("0")
+  const [transactionError, setTransactionError] = useState<string>("")
   const [formData, setFormData] = useState<PolicyFormData>({
     policyType: "",
     assetType: "",
@@ -43,6 +54,39 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
     inviteLink: "https://takafi-ai/invite/group_764g1",
   })
 
+  // Watch for transaction confirmation and show toast
+  useEffect(() => {
+    if (isConfirmed && currentStep === 3) {
+      toast.success("Policy created successfully!", {
+        description: "Your policy has been created and is now active.",
+        duration: 5000,
+      })
+      setCurrentStep(4)
+    }
+  }, [isConfirmed, currentStep])
+
+  // Watch for transaction errors and show toast
+  useEffect(() => {
+    if (writeError) {
+      toast.error("Failed to create policy", {
+        description: writeError.message || "An error occurred while creating the policy.",
+        duration: 5000,
+      })
+      setTransactionError(writeError.message || "Failed to create policy")
+    }
+  }, [writeError])
+
+  // Watch for confirmation errors
+  useEffect(() => {
+    if (confirmError) {
+      toast.error("Transaction failed", {
+        description: confirmError.message || "The transaction failed to confirm.",
+        duration: 5000,
+      })
+      setTransactionError(confirmError.message || "Transaction failed")
+    }
+  }, [confirmError])
+
   const isIndividual = formData.policyType === "individual"
   // For step navigation, we need to skip step 2 if individual
   // So, the visible steps are:
@@ -53,7 +97,44 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
 
   const handleInputChange = (field: keyof PolicyFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+
+    // Recalculate contribution when asset value or duration changes
+    if (field === "assetValue" || field === "duration") {
+      calculateContribution(
+        field === "assetValue" ? value : formData.assetValue,
+        field === "duration" ? value : formData.duration
+      )
+    }
   }
+
+  // Calculate contribution based on asset value and duration
+  const calculateContribution = (assetValue: string, duration: string) => {
+    if (!assetValue || !duration) return
+
+    try {
+      const value = parseFloat(assetValue.replace(/[^0-9.]/g, ""))
+      const durationMonths = duration === "6-months" ? 6 :
+        duration === "1-year" ? 12 :
+          duration === "2-years" ? 24 :
+            duration === "5-years" ? 60 : 6
+
+      // Simple calculation: 15.8% of asset value divided by duration in months
+      // This is a simplified risk calculation
+      const riskPercentage = 0.158
+      const totalRiskAmount = value * riskPercentage
+      const monthlyContribution = totalRiskAmount / durationMonths
+
+      // Convert to ETH (assuming USD to ETH conversion, you may want to use an oracle)
+      // For demo purposes, using a rough estimate: 1 ETH = $3000
+      const ethContribution = monthlyContribution / 3000
+
+      setCalculatedContribution(ethContribution.toFixed(6))
+    } catch (error) {
+      console.error("Error calculating contribution:", error)
+      setCalculatedContribution("0")
+    }
+  }
+
   // Helper to go to next step, skipping group details if needed
   const handleNext = () => {
     if (currentStep === 1) {
@@ -82,16 +163,61 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
     }
   }
 
-  const handleSubmit = () => {
-    console.log("Policy created:", formData)
-    setCurrentStep(4)
-    // onOpenChange(false)
-    // setCurrentStep(1)
+  const handleSubmit = async () => {
+    if (!isConnected) {
+      toast.error("Wallet not connected", {
+        description: "Please connect your wallet first to create a policy.",
+        duration: 5000,
+      })
+      setTransactionError("Please connect your wallet first")
+      return
+    }
+
+    try {
+      setTransactionError("")
+
+      // Parse form data
+      const assetValue = parseFloat(formData.assetValue.replace(/[^0-9.]/g, ""))
+      const durationInDays = formData.duration === "6-months" ? 180 :
+        formData.duration === "1-year" ? 365 :
+          formData.duration === "2-years" ? 730 :
+            formData.duration === "5-years" ? 1825 : 180
+
+      // Convert coverage amount to wei (asset value in USD converted to ETH)
+      const coverageInEth = assetValue / 3000 // Rough USD to ETH conversion
+      const coverageAmount = parseEther(coverageInEth.toString())
+
+      // Contribution per member in wei
+      const contributionPerMember = parseEther(calculatedContribution)
+
+      // Policy type: 0 for INDIVIDUAL, 1 for GROUP
+      const policyType = formData.policyType === "individual" ? 0 : 1
+
+      // Call the smart contract
+      writeContract({
+        address: TAKFI_CONTRACT_ADDRESS,
+        abi: TAKFI_ABI,
+        functionName: "createPolicy",
+        args: [
+          policyType,
+          coverageAmount,
+          contributionPerMember,
+          BigInt(durationInDays)
+        ],
+        value: contributionPerMember, // Send the contribution amount
+      })
+
+    } catch (error: any) {
+      console.error("Error creating policy:", error)
+      setTransactionError(error?.message || "Failed to create policy")
+    }
   }
 
   const handleCancel = () => {
     onOpenChange(false)
     setCurrentStep(1)
+    setCalculatedContribution("0")
+    setTransactionError("")
     setFormData({
       policyType: "",
       assetType: "",
@@ -255,7 +381,6 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
 
   const renderStep3 = () => (
     <div className="space-y-8">
-
       <div className="text-center space-y-6">
         <div className="space-y-4">
           <p className="text-muted-foreground">Your Calculated risk score</p>
@@ -280,17 +405,34 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
 
         <div className="border-2 border-[#12D96A] rounded-lg p-8 bg-primary/5">
           <div className="text-center space-y-2">
-            <p className="text-4xl font-bold text-card-foreground">$3,200</p>
+            <p className="text-4xl font-bold text-card-foreground">{calculatedContribution} ETH</p>
             <p className="text-lg font-medium text-card-foreground">Contribution Amount</p>
             <p className="text-sm text-muted-foreground">Based on your asset value and risk score</p>
           </div>
         </div>
+
+        {transactionError && (
+          <div className="bg-red-500/10 border border-red-500 rounded-lg p-4">
+            <p className="text-red-500 text-sm">{transactionError}</p>
+          </div>
+        )}
+
+        {isPending && (
+          <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4">
+            <p className="text-yellow-500 text-sm">Waiting for wallet confirmation...</p>
+          </div>
+        )}
+
+        {isConfirming && (
+          <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-4">
+            <p className="text-blue-500 text-sm">Transaction pending... Please wait for confirmation.</p>
+          </div>
+        )}
       </div>
     </div>
   )
   const renderStep4 = () => (
     <div className="space-y-8">
-
       <div className="text-center space-y-6">
         <div className="space-y-4">
           <p className="text-muted-foreground">Policy created successfully!</p>
@@ -302,6 +444,21 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
               </svg>
             </div>
           </div>
+
+          {hash && (
+            <div className="bg-[#12D96A]/10 border border-[#12D96A] rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">Transaction Hash:</p>
+              <p className="text-xs text-[#12D96A] break-all font-mono">{hash}</p>
+              <a
+                href={`https://sepolia.basescan.org/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-[#12D96A] hover:underline mt-2 inline-block"
+              >
+                View on BaseScan →
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -387,9 +544,10 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
           <div className="pt-4">
             <Button
               onClick={handleSubmit}
-              className="w-full bg-[#12D96A] hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isPending || isConfirming || !isConnected || !calculatedContribution || calculatedContribution === "0"}
+              className="w-full bg-[#12D96A] hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Proceed
+              {isPending ? "Confirm in Wallet..." : isConfirming ? "Processing..." : "Proceed"}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -398,7 +556,7 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
         {showDone && (
           <div className="pt-4">
             <Button
-              onClick={() => {onOpenChange(false); setCurrentStep(1)}}
+              onClick={() => { onOpenChange(false); setCurrentStep(1) }}
               className="w-full bg-[#12D96A] hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 cursor-pointer"
             >
               Done

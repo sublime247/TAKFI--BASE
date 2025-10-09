@@ -610,6 +610,6 @@ contract TakafulInsurance is
         require(success, "Withdrawal failed");
     }
 
-    // Receive function to accept HBAR
+    // Receive function to accept BASEETH
     receive() external payable {}
 }

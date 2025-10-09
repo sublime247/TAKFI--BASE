@@ -3,8 +3,8 @@
 A Sharia-compliant insurance (Takaful) smart contract built on Base for non-life insurance coverage including vehicles, property, and business assets.
 
 # Deployed and Verified 
-Contract Address: 0x32a300274bb6304006618fb821691faac7109934
-Verified: https://base-sepolia.blockscout.com/address/0x32a300274bb6304006618fb821691faac7109934#code
+- **Contract Address**: 0x32a300274bb6304006618fb821691faac7109934
+- **Verified Link**: https://base-sepolia.blockscout.com/address/0x32a300274bb6304006618fb821691faac7109934#code
 
 ## 🌟 Features
 

@@ -12,9 +12,9 @@ export function Header() {
 
       {/* Right side */}
       <div className="flex items-center space-x-6">
-        <Avatar className="h-8 w-8">
+        {/* <Avatar className="h-8 w-8">
           <img src="/logo.png" alt="TakFi" className="w-100" />
-        </Avatar>
+        </Avatar> */}
         <ConnectButton />
       </div>
     </header>
