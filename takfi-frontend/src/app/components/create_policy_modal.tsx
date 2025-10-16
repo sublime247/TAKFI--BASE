@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, ArrowLeft, Copy, ArrowRight } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from "wagmi"
-import { parseEther, formatEther } from "viem"
+import { parseEther } from "viem"
 import { TAKFI_CONTRACT_ADDRESS } from "../contracts/takfi-address"
 import { TAKFI_ABI } from "../contracts/takfi-abi"
 import { toast } from "sonner"
@@ -34,7 +34,7 @@ interface PolicyFormData {
 }
 
 export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps) {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const { data: hash, writeContract, isPending, error: writeError } = useWriteContract()
   const { isLoading: isConfirming, isSuccess: isConfirmed, error: confirmError } = useWaitForTransactionReceipt({ hash })
 
@@ -207,9 +207,10 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
         value: contributionPerMember, // Send the contribution amount
       })
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating policy:", error)
-      setTransactionError(error?.message || "Failed to create policy")
+      const errorMessage = error instanceof Error ? error.message : "Failed to create policy"
+      setTransactionError(errorMessage)
     }
   }
 
@@ -481,11 +482,6 @@ export function CreatePolicyModal({ open, onOpenChange }: CreatePolicyModalProps
     if (currentStep === 4) return renderStep4()
     return null
   }
-
-  // Show the Continue button for steps before contribution preview
-  const showContinue =
-    (currentStep === 1) ||
-    (currentStep === 2 && !isIndividual)
 
   // Show the Proceed button only on contribution preview
   const showProceed =

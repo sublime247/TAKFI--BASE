@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 
 export function Header() {

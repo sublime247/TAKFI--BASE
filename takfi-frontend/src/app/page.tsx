@@ -3,22 +3,9 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Zap, ExternalLink, ArchiveRestore, Briefcase } from "lucide-react"
 import Link from "next/link"
-import { useState, useEffect, useRef } from "react"
+import { useEffect } from "react"
 
 export default function LandingPage() {
-  const [email, setEmail] = useState("")
-  const [claimFormData, setClaimFormData] = useState({
-    policyId: "Car/Motor",
-    claimType: "e.g Car, Land, Health",
-    estimatedCost: "min. 6 months",
-    dateOfIncident: "min. 6 months",
-    locationOfIncident: "Ar-Riyadh city, Saudi",
-    description: "Type something",
-  })
-
-  const handleClaimInputChange = (field: string, value: string) => {
-    setClaimFormData((prev) => ({ ...prev, [field]: value }))
-  }
 
   // Intersection Observer for scroll animations
   useEffect(() => {
@@ -208,11 +195,11 @@ export default function LandingPage() {
               <span className="text-white"> Way</span>
             </h1>
             <p className="text-lg lg:text-xl text-white/70 max-w-3xl mx-auto mb-10 leading-relaxed fade-in-up stagger-1">
-              Protect your assets with the world's first blockchain-powered ethical insurance platform. Built on chain,
+              Protect your assets with the world&apos;s first blockchain-powered ethical insurance platform. Built on chain,
               powered by AI, and rooted in fairness.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in-up stagger-2">
-            <Link href="/dashboard">
+              <Link href="/dashboard">
                 <Button size="lg" className="bg-[#00ff88] hover:bg-[#00ff88]/90 text-black font-semibold px-8 glow-button">
                   Launch DApp
                   <ExternalLink className="w-4 h-4 ml-2" />
@@ -248,7 +235,7 @@ export default function LandingPage() {
             {/* Left Side - Title */}
             <div className="basis-6/12 fade-in-left">
               <h2 className="text-3xl md:text-5xl font-bold leading-tight">
-                Why Insurance<br/>Needs Change
+                Why Insurance<br />Needs Change
               </h2>
             </div>
 
@@ -309,23 +296,23 @@ export default function LandingPage() {
           {/* Main Content Frame */}
           <div className="relative max-w-6xl mx-auto">
             {/* Content Container */}
-            <div className="grid lg:grid-cols-2 lg:grid-cols-[3fr_2fr] gap-12 items-center">
-                {/* Left side - Policy Cards Mockup */}
-                <div className="space-y-6 fade-in-left">
-                  <img src="/carinsurance.svg" alt="" className="hover-scale" />
-                </div>
-
-                {/* Right side - Text Content */}
-                <div className="space-y-6 fade-in-right">
-                  <h3 className="text-3xl lg:text-4xl font-bold text-white leading-tight">
-                    Individual and Group Policies
-                  </h3>
-                  <p className="text-lg text-white/70 leading-relaxed">
-                    Protect yourself with an individual plan or join your family, friends, or community in a group
-                    policy – fair, transparent, and Sharia-compliant coverage powered by blockchain.
-                  </p>
-                </div>
+            <div className="grid lg:grid-cols-[3fr_2fr] gap-12 items-center">
+              {/* Left side - Policy Cards Mockup */}
+              <div className="space-y-6 fade-in-left">
+                <img src="/carinsurance.svg" alt="" className="hover-scale" />
               </div>
+
+              {/* Right side - Text Content */}
+              <div className="space-y-6 fade-in-right">
+                <h3 className="text-3xl lg:text-4xl font-bold text-white leading-tight">
+                  Individual and Group Policies
+                </h3>
+                <p className="text-lg text-white/70 leading-relaxed">
+                  Protect yourself with an individual plan or join your family, friends, or community in a group
+                  policy – fair, transparent, and Sharia-compliant coverage powered by blockchain.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

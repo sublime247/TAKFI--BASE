@@ -1,6 +1,5 @@
 "use client"
 import type React from "react"
-import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
@@ -10,6 +9,7 @@ import { Sidebar } from "@/app/components/sidebar"
 import { Header } from "@/app/components/header"
 import { usePathname } from "next/navigation"
 import { Providers } from "./provider"
+import { Toaster } from "@/components/ui/sonner"
 import '@rainbow-me/rainbowkit/styles.css';
 
 // export const metadata: Metadata = {
@@ -41,6 +41,7 @@ export default function RootLayout({
             </div>
           </div>
           <Analytics />
+          <Toaster />
         </Providers>
       </body>
     </html>
