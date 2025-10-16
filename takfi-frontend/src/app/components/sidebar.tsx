@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { usePathname, useRouter } from "next/navigation"
 
 const navigation = [
-    { name: "Dashboard", href: "/", icon: Home },
+    { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Policies", href: "/policies", icon: FileText },
     { name: "Claims", href: "/claims", icon: ClipboardList },
     { name: "Surplus & Reports", href: "/reports", icon: TrendingUp },
