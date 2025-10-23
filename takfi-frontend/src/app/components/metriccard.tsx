@@ -35,34 +35,25 @@ interface ClaimHistoryItem {
     status: 'Approved' | 'Pending' | 'Declined'
 }
 
-const claimHistoryData: ClaimHistoryItem[] = [
-    {
-        claimId: '#323091',
-        amountClaimed: '$1,082.00',
-        asset: 'Car',
-        requestDate: 'Dec 13, 2025',
-        surplus: '$289.66',
-        status: 'Approved'
-    },
-    {
-        claimId: '#323091',
-        amountClaimed: '$1,082.00',
-        asset: 'Land',
-        requestDate: 'Dec 13, 2025',
-        surplus: '$289.66',
-        status: 'Pending'
-    },
-    {
-        claimId: '#323091',
-        amountClaimed: '$1,082.00',
-        asset: 'Truck',
-        requestDate: 'Dec 13, 2025',
-        surplus: '$289.66',
-        status: 'Declined'
-    }
-]
+interface BlockchainClaim {
+    claimId: string
+    policyId: string
+    claimant: string
+    claimAmount: string
+    amountInUsd: number
+    reason: string
+    evidenceHash: string
+    status: number // 0: SUBMITTED, 1: UNDER_REVIEW, 2: APPROVED, 3: REJECTED, 4: PAID
+    submissionDate: string
+    asset: string
+}
 
-export function ClaimHistoryCard() {
+interface ClaimHistoryCardProps {
+    claims?: BlockchainClaim[]
+    isLoading?: boolean
+}
+
+export function ClaimHistoryCard({ claims, isLoading }: ClaimHistoryCardProps) {
     const [search, setSearch] = useState("");
     const router = useRouter();
     const pathname = usePathname();
@@ -72,6 +63,26 @@ export function ClaimHistoryCard() {
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value);
     };
+
+    // Convert blockchain claims to display format
+    const getStatusText = (status: number): 'Approved' | 'Pending' | 'Declined' => {
+        if (status === 0 || status === 1) return 'Pending' // SUBMITTED or UNDER_REVIEW
+        if (status === 2 || status === 4) return 'Approved' // APPROVED or PAID
+        return 'Declined' // REJECTED
+    }
+
+    const formatCurrency = (amount: number): string => {
+        return `$${amount.toFixed(2)}`
+    }
+
+    const claimHistoryData: ClaimHistoryItem[] = claims ? claims.map(claim => ({
+        claimId: `#${claim.claimId}`,
+        amountClaimed: formatCurrency(claim.amountInUsd),
+        asset: claim.asset,
+        requestDate: claim.submissionDate,
+        surplus: '$0.00', // Surplus distribution is handled separately in the contract
+        status: getStatusText(claim.status),
+    })) : []
 
     const filteredClaims = claimHistoryData.filter((claim) => {
         const searchLower = search.toLowerCase();
@@ -121,7 +132,11 @@ export function ClaimHistoryCard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredClaims.length > 0 ? (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={6} className="py-6 px-4 text-center text-gray-400">Loading claims...</td>
+                                </tr>
+                            ) : filteredClaims.length > 0 ? (
                                 filteredClaims.map((claim, index) => (
                                     <tr key={index} className="border-b border-gray-700/30">
                                         <td className="py-4 px-4 text-white">{claim.claimId}</td>
@@ -141,7 +156,9 @@ export function ClaimHistoryCard() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="py-6 px-4 text-center text-gray-400">No claims found.</td>
+                                    <td colSpan={6} className="py-6 px-4 text-center text-gray-400">
+                                        {claims === undefined ? "No claims found." : "No claims yet. Submit your first claim!"}
+                                    </td>
                                 </tr>
                             )}
                         </tbody>
