@@ -1,7 +1,7 @@
 import { network } from "hardhat";
 
 const { viem } = await network.connect({
-  network: "baseSepolia"
+  network: "sepolia",
 });
 
 async function main(): Promise<void> {
