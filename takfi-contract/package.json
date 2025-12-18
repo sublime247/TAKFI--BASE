@@ -18,6 +18,8 @@
     "viem": "^2.37.6"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0"
+    "@openzeppelin/contracts": "^5.4.0",
+      "@fhevm/solidity": "^0.9.0"
+
   }
 }

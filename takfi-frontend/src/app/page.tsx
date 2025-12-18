@@ -189,10 +189,10 @@ export default function LandingPage() {
             <h1 className="text-5xl lg:text-7xl font-bold leading-tight mb-6 text-balance fade-in-up">
               <span className="text-white">Insure your Assets </span>
               <span className="text-[#00ff88]">Ethically</span>
-              <span className="text-white">, the</span>
+
               <br />
-              <span className="text-[#00ff88]">Halal</span>
-              <span className="text-white"> Way</span>
+              <span className="text-[#00ff88]">on-chain</span>
+         
             </h1>
             <p className="text-lg lg:text-xl text-white/70 max-w-3xl mx-auto mb-10 leading-relaxed fade-in-up stagger-1">
               Protect your assets with the world&apos;s first blockchain-powered ethical insurance platform. Built on chain,
